@@ -1,9 +1,12 @@
 import Link from "next/link";
-import RegisterForm from "../components/RegisterForm";
 
-export default function RegisterPage() {
+export default function AuthLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
   return (
-    <div className="min-h-full bg-background">
+    <div className="flex min-h-full flex-col bg-background">
       <header className="border-b border-border-classic bg-paper/80 shadow-[inset_0_-1px_0_0_rgba(28,25,23,0.06)]">
         <div className="mx-auto max-w-3xl px-6 py-10 text-center">
           <p className="font-mono text-[11px] uppercase tracking-[0.35em] text-ink-muted">
@@ -14,11 +17,15 @@ export default function RegisterPage() {
               PDF Question Mapper
             </h1>
           </Link>
+          <p className="mx-auto mt-4 max-w-lg text-[15px] leading-relaxed text-ink-muted">
+            Upload exam PDFs to summarize total pages, printed page numbers, and per-page
+            question ranges—without re-sorting or filling gaps.
+          </p>
         </div>
       </header>
 
-      <main className="mx-auto max-w-md px-6 py-12">
-        <RegisterForm />
+      <main className="mx-auto w-full max-w-3xl flex-1 px-6 py-12">
+        <div className="mx-auto max-w-md">{children}</div>
       </main>
 
       <footer className="mt-auto border-t border-border-classic py-8 text-center">
