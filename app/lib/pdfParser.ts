@@ -1,13 +1,36 @@
-import { join } from "node:path";
+import { existsSync } from "node:fs";
+import { createRequire } from "node:module";
+import { dirname, join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { PDFParse } from "pdf-parse";
 import { extractPageNumber, extractQuestions } from "../utils/regex";
 
-// pdf.js fake worker imports this path; Next/Turbopack bundles it to a missing chunk unless we set an absolute file URL.
-const workerSrc = pathToFileURL(
-  join(process.cwd(), "node_modules", "pdf-parse", "dist", "pdf-parse", "esm", "pdf.worker.mjs")
-).href;
-PDFParse.setWorker(workerSrc);
+const require = createRequire(import.meta.url);
+
+function resolvePdfWorkerFileUrl(): string {
+  try {
+    const mainEntry = require.resolve("pdf-parse");
+    const fromPackage = join(dirname(mainEntry), "..", "esm", "pdf.worker.mjs");
+    if (existsSync(fromPackage)) {
+      return pathToFileURL(fromPackage).href;
+    }
+  } catch {
+    /* use cwd fallback */
+  }
+  const fromCwd = join(
+    process.cwd(),
+    "node_modules",
+    "pdf-parse",
+    "dist",
+    "pdf-parse",
+    "esm",
+    "pdf.worker.mjs",
+  );
+  return pathToFileURL(fromCwd).href;
+}
+
+// pdf.js loads the worker via dynamic import(file://...); must resolve a path that exists in the serverless bundle.
+PDFParse.setWorker(resolvePdfWorkerFileUrl());
 
 export interface PageSummary {
   printedPage: number | null;
