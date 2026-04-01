@@ -7,7 +7,17 @@ import { extractPageNumber, extractQuestions } from "../utils/regex";
 
 const require = createRequire(import.meta.url);
 
+/**
+ * pdf.js loads the worker via `import(workerSrc)` (fake worker on Node). On Vercel the
+ * traced bundle may omit deep paths under node_modules; `pdf-worker/` is copied at
+ * install/build so the file always exists next to the app root.
+ */
 function resolvePdfWorkerFileUrl(): string {
+  const copied = join(process.cwd(), "pdf-worker", "pdf.worker.mjs");
+  if (existsSync(copied)) {
+    return pathToFileURL(copied).href;
+  }
+
   try {
     const mainEntry = require.resolve("pdf-parse");
     const fromPackage = join(dirname(mainEntry), "..", "esm", "pdf.worker.mjs");
@@ -15,8 +25,9 @@ function resolvePdfWorkerFileUrl(): string {
       return pathToFileURL(fromPackage).href;
     }
   } catch {
-    /* use cwd fallback */
+    /* fall through */
   }
+
   const fromCwd = join(
     process.cwd(),
     "node_modules",
@@ -26,7 +37,13 @@ function resolvePdfWorkerFileUrl(): string {
     "esm",
     "pdf.worker.mjs",
   );
-  return pathToFileURL(fromCwd).href;
+  if (existsSync(fromCwd)) {
+    return pathToFileURL(fromCwd).href;
+  }
+
+  throw new Error(
+    "PDF worker file is missing. Run `npm install` (postinstall copies pdf-worker/) or `npm run prebuild`.",
+  );
 }
 
 let pdfWorkerInitialized = false;

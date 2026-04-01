@@ -80,12 +80,14 @@ export async function POST(req: NextRequest) {
     console.error("[analyze-pdf]", err);
     const message =
       err instanceof Error ? err.message : "PDF analysis failed unexpectedly.";
+    const expose =
+      process.env.NODE_ENV === "development" ||
+      process.env.ANALYZE_PDF_DEBUG === "1";
     return NextResponse.json(
       {
-        error:
-          process.env.NODE_ENV === "development"
-            ? message
-            : "PDF analysis failed. If this persists, the file may be too large for the server or the deployment may be missing PDF worker assets.",
+        error: expose
+          ? message
+          : "PDF analysis failed. Try a smaller PDF (Vercel Hobby limits request size). If it still fails, set env ANALYZE_PDF_DEBUG=1 temporarily and check Vercel function logs for [analyze-pdf].",
       },
       { status: 500 },
     );
