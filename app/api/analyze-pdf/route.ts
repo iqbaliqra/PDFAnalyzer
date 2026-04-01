@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import mongoose from "mongoose";
 import { getAuthUserId } from "../../lib/auth";
 import { connectDB } from "../../lib/db";
+import { parseMultipartUpload, type ParsedUploadPart } from "../../lib/parseMultipartUpload";
 import { analyzePDF, AnalyzedPDF } from "../../lib/pdfParser";
 import Result from "../../models/Result";
 
@@ -10,9 +11,9 @@ export const runtime = "nodejs";
 /** Vercel Pro/Enterprise: raise if PDFs are large or slow to parse (Hobby max is 10s). */
 export const maxDuration = 60;
 
-function isPdfUpload(file: File): boolean {
-  if (file.type === "application/pdf") return true;
-  return file.type === "" && file.name.toLowerCase().endsWith(".pdf");
+function isPdfPart(part: ParsedUploadPart): boolean {
+  if (part.mimeType === "application/pdf") return true;
+  return part.filename.toLowerCase().endsWith(".pdf");
 }
 
 export async function POST(req: NextRequest) {
@@ -35,21 +36,32 @@ export async function POST(req: NextRequest) {
     await connectDB();
     const userObjectId = new mongoose.Types.ObjectId(userId);
 
-    const formData = await req.formData();
-    const files = formData.getAll("files") as File[];
+    const parts = await parseMultipartUpload(req, { fileFieldName: "files" });
+    if (parts.length === 0) {
+      return NextResponse.json(
+        { error: "No files were uploaded. Use field name \"files\" (multipart/form-data)." },
+        { status: 400 },
+      );
+    }
 
     const results: AnalyzedPDF[] = [];
 
-    for (const file of files) {
-      if (!isPdfUpload(file)) {
+    for (const part of parts) {
+      if (!isPdfPart(part)) {
         return NextResponse.json(
-          { error: `Not a PDF: ${file.name}` },
+          { error: `Not a PDF: ${part.filename}` },
           { status: 400 },
         );
       }
 
-      const buffer = Buffer.from(await file.arrayBuffer());
-      const analyzed = await analyzePDF(buffer, file.name);
+      if (part.buffer.length === 0) {
+        return NextResponse.json(
+          { error: `Empty file: ${part.filename}` },
+          { status: 400 },
+        );
+      }
+
+      const analyzed = await analyzePDF(part.buffer, part.filename);
 
       await Result.create({
         userId: userObjectId,
