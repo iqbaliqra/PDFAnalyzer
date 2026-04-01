@@ -1,5 +1,14 @@
 @import "tailwindcss";
 
+@layer base {
+  button:enabled {
+    cursor: pointer;
+  }
+  button:disabled {
+    cursor: not-allowed;
+  }
+}
+
 :root {
   --background: #f5f0e8;
   --foreground: #1c1917;

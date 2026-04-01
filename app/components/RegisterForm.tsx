@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import toast from "react-hot-toast";
 import { useAuth } from "../contexts/AuthContext";
 import {
   validateAuthEmail,
@@ -14,6 +15,7 @@ import {
   AuthFieldLabel,
   authInputClassNames,
 } from "./auth/AuthFormPrimitives";
+import { PasswordFieldInput } from "./auth/PasswordFieldInput";
 
 export default function RegisterForm() {
   const { register, token, hydrated } = useAuth();
@@ -24,7 +26,6 @@ export default function RegisterForm() {
   const [password, setPassword] = useState("");
   const [touched, setTouched] = useState({ name: false, email: false, password: false });
   const [submitAttempted, setSubmitAttempted] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
   const nameErr = useMemo(() => validateAuthName(name), [name]);
@@ -45,7 +46,6 @@ export default function RegisterForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitAttempted(true);
-    setError(null);
     if (!formValid) return;
 
     setPending(true);
@@ -53,7 +53,9 @@ export default function RegisterForm() {
       await register(name.trim(), email.trim(), password);
       router.push("/login?registered=1");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong.");
+      toast.error(
+        err instanceof Error ? err.message : "Something went wrong.",
+      );
     } finally {
       setPending(false);
     }
@@ -128,9 +130,9 @@ export default function RegisterForm() {
           <AuthFieldLabel htmlFor="reg-password" required>
             Password
           </AuthFieldLabel>
-          <input
+          <PasswordFieldInput
             id="reg-password"
-            type="password"
+            hasError={showPasswordError}
             autoComplete="new-password"
             placeholder="At least 8 characters"
             value={password}
@@ -140,7 +142,6 @@ export default function RegisterForm() {
             aria-describedby={
               showPasswordError ? "reg-password-error" : "reg-password-help"
             }
-            className={authInputClassNames(showPasswordError)}
           />
           {showPasswordError && passwordErr ? (
             <AuthFieldError id="reg-password-error" message={passwordErr} />
@@ -151,20 +152,11 @@ export default function RegisterForm() {
           )}
         </div>
 
-        {error && (
-          <p
-            role="alert"
-            className="rounded-sm border-l-2 border-red-800 bg-red-50 px-3 py-2.5 text-sm text-red-950"
-          >
-            {error}
-          </p>
-        )}
-
         <button
           type="submit"
           disabled={!formValid || pending}
           title={!formValid ? "Fill in all fields correctly to continue" : undefined}
-          className="w-full rounded-sm border border-accent bg-accent py-2.5 font-mono text-xs uppercase tracking-[0.15em] text-white shadow-[inset_0_1px_0_0_rgba(255,255,255,0.12)] transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:border-stone-300 disabled:bg-stone-300 disabled:text-stone-600 disabled:shadow-none"
+          className="w-full cursor-pointer rounded-sm border border-accent bg-accent py-2.5 font-mono text-xs uppercase tracking-[0.15em] text-white shadow-[inset_0_1px_0_0_rgba(255,255,255,0.12)] transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:border-stone-300 disabled:bg-stone-300 disabled:text-stone-600 disabled:shadow-none"
         >
           {pending ? "Please wait…" : "Create account"}
         </button>

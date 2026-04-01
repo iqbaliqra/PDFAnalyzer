@@ -37,13 +37,17 @@ export function AuthFieldError({ id, message }: { id: string; message: string })
   );
 }
 
-export function authInputClassNames(hasError: boolean): string {
+export function authInputFieldClassNames(hasError: boolean): string {
   return [
-    "mt-1.5 w-full rounded-sm border bg-background px-3 py-2.5 text-sm text-foreground outline-none transition-[border-color,box-shadow]",
+    "w-full rounded-sm border bg-background px-3 py-2.5 text-sm text-foreground outline-none transition-[border-color,box-shadow]",
     "placeholder:text-ink-muted/50",
     "focus:ring-2 focus:ring-offset-0",
     hasError
       ? "border-red-700/70 focus:border-red-700 focus:ring-red-500/25"
       : "border-border-classic focus:border-accent focus:ring-accent/25",
   ].join(" ");
+}
+
+export function authInputClassNames(hasError: boolean): string {
+  return `mt-1.5 ${authInputFieldClassNames(hasError)}`;
 }

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useState } from "react";
+import toast from "react-hot-toast";
 import { useAuth } from "../contexts/AuthContext";
 import { validateAuthEmail, validateAuthPassword } from "../utils/regex";
 import {
@@ -10,6 +11,7 @@ import {
   AuthFieldLabel,
   authInputClassNames,
 } from "./auth/AuthFormPrimitives";
+import { PasswordFieldInput } from "./auth/PasswordFieldInput";
 
 function LoginFormInner() {
   const { login, token, hydrated } = useAuth();
@@ -21,7 +23,6 @@ function LoginFormInner() {
   const [password, setPassword] = useState("");
   const [touched, setTouched] = useState({ email: false, password: false });
   const [submitAttempted, setSubmitAttempted] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
   const emailErr = useMemo(() => validateAuthEmail(email), [email]);
@@ -37,10 +38,17 @@ function LoginFormInner() {
     }
   }, [hydrated, token, router]);
 
+  useEffect(() => {
+    if (!registered) return;
+    toast.success(
+      "Registration successful. Please sign in with your email and password.",
+      { id: "login-after-register", duration: 5000 },
+    );
+  }, [registered]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitAttempted(true);
-    setError(null);
     if (!formValid) return;
 
     setPending(true);
@@ -48,7 +56,9 @@ function LoginFormInner() {
       await login(email.trim(), password);
       router.push("/dashboard");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong.");
+      toast.error(
+        err instanceof Error ? err.message : "Something went wrong.",
+      );
     } finally {
       setPending(false);
     }
@@ -63,15 +73,6 @@ function LoginFormInner() {
       <p className="mt-2 text-sm leading-relaxed text-ink-muted">
         Sign in to upload PDFs and view your analyses.
       </p>
-
-      {registered && (
-        <p
-          role="status"
-          className="mt-4 rounded-sm border border-emerald-800/30 bg-emerald-50/90 px-3 py-2.5 text-sm text-emerald-950"
-        >
-          Registration successful. Please sign in with your email and password.
-        </p>
-      )}
 
       <form noValidate onSubmit={handleSubmit} className="mt-6 space-y-5">
         <div>
@@ -102,9 +103,9 @@ function LoginFormInner() {
           <AuthFieldLabel htmlFor="login-password" required>
             Password
           </AuthFieldLabel>
-          <input
+          <PasswordFieldInput
             id="login-password"
-            type="password"
+            hasError={showPasswordError}
             autoComplete="current-password"
             placeholder="Your password"
             value={password}
@@ -112,7 +113,6 @@ function LoginFormInner() {
             onBlur={() => setTouched((t) => ({ ...t, password: true }))}
             aria-invalid={showPasswordError}
             aria-describedby={showPasswordError ? "login-password-error" : "login-password-hint"}
-            className={authInputClassNames(showPasswordError)}
           />
           <p id="login-password-hint" className="sr-only">
             Enter your account password.
@@ -122,20 +122,11 @@ function LoginFormInner() {
           )}
         </div>
 
-        {error && (
-          <p
-            role="alert"
-            className="rounded-sm border-l-2 border-red-800 bg-red-50 px-3 py-2.5 text-sm text-red-950"
-          >
-            {error}
-          </p>
-        )}
-
         <button
           type="submit"
           disabled={!formValid || pending}
           title={!formValid ? "Fill in all fields correctly to continue" : undefined}
-          className="w-full rounded-sm border border-accent bg-accent py-2.5 font-mono text-xs uppercase tracking-[0.15em] text-white shadow-[inset_0_1px_0_0_rgba(255,255,255,0.12)] transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:border-stone-300 disabled:bg-stone-300 disabled:text-stone-600 disabled:shadow-none"
+          className="w-full cursor-pointer rounded-sm border border-accent bg-accent py-2.5 font-mono text-xs uppercase tracking-[0.15em] text-white shadow-[inset_0_1px_0_0_rgba(255,255,255,0.12)] transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:border-stone-300 disabled:bg-stone-300 disabled:text-stone-600 disabled:shadow-none"
         >
           {pending ? "Please wait…" : "Sign in"}
         </button>
