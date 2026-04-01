@@ -7,6 +7,20 @@ import { extractPageNumber, extractQuestions } from "../utils/regex";
 
 const require = createRequire(import.meta.url);
 
+/** Resolve pdf.js CMap / standard font dirs on disk (avoids missing assets when tracing omits them on Vercel). */
+function getPdfJsDiskAssetUrls(): {
+  cMapUrl: string;
+  standardFontDataUrl: string;
+} {
+  const pkgRoot = dirname(require.resolve("pdfjs-dist/package.json"));
+  const asDirUrl = (dir: string) =>
+    `${pathToFileURL(dir).href.replace(/\/?$/, "")}/`;
+  return {
+    cMapUrl: asDirUrl(join(pkgRoot, "cmaps")),
+    standardFontDataUrl: asDirUrl(join(pkgRoot, "standard_fonts")),
+  };
+}
+
 /**
  * pdf.js loads the worker via `import(workerSrc)` (fake worker on Node). On Vercel the
  * traced bundle may omit deep paths under node_modules; `pdf-worker/` is copied at
@@ -69,7 +83,15 @@ export interface AnalyzedPDF {
 
 export const analyzePDF = async (buffer: Buffer, fileName: string): Promise<AnalyzedPDF> => {
   ensurePdfWorker();
-  const parser = new PDFParse({ data: buffer });
+  const assets = getPdfJsDiskAssetUrls();
+  const parser = new PDFParse({
+    data: buffer,
+    useSystemFonts: true,
+    useWorkerFetch: false,
+    cMapPacked: true,
+    cMapUrl: assets.cMapUrl,
+    standardFontDataUrl: assets.standardFontDataUrl,
+  });
   let textResult;
   try {
     textResult = await parser.getText();

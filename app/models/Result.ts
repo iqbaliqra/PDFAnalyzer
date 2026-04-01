@@ -18,7 +18,16 @@ const ResultSchema = new Schema<IResult>(
     fileName: { type: String, required: true },
     totalPages: { type: Number, required: true },
     printedPageSequence: { type: [Schema.Types.Mixed], required: true },
-    pageSummary: { type: [Object], required: true },
+    pageSummary: {
+      type: [
+        {
+          printedPage: Schema.Types.Mixed,
+          range: Schema.Types.Mixed,
+          questionStarts: { type: [Number], default: [] },
+        },
+      ],
+      required: true,
+    },
   },
   { timestamps: true }
 );
