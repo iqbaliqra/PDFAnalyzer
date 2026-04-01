@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, ChangeEvent, useMemo } from "react";
+import toast from "react-hot-toast";
 interface FileUploadProps {
   authToken: string;
   onAnalysisComplete: () => void;
@@ -62,12 +63,32 @@ export default function FileUpload({
         body: formData,
         headers: { Authorization: `Bearer ${authToken}` },
       });
+      const text = await res.text();
+      let data: { error?: string; results?: unknown } | null = null;
+      try {
+        data = text ? (JSON.parse(text) as { error?: string; results?: unknown }) : null;
+      } catch {
+        data = null;
+      }
+
       if (res.status === 401) {
         onUnauthorized?.();
         return;
       }
-      const data = await res.json();
-      if (!res.ok) return;
+
+      if (!data) {
+        toast.error(
+          "The server returned a non-JSON response (often a crash or size limit). Try a smaller PDF or check Vercel logs.",
+        );
+        return;
+      }
+
+      if (!res.ok) {
+        toast.error(
+          typeof data.error === "string" ? data.error : `Request failed (${res.status}).`,
+        );
+        return;
+      }
 
       const analyzedCount = files.length;
       onAnalysisComplete();

@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 import { getAuthUserId } from "../../lib/auth";
 import { connectDB } from "../../lib/db";
 import { parseMultipartUpload, type ParsedUploadPart } from "../../lib/parseMultipartUpload";
-import { analyzePDF, AnalyzedPDF } from "../../lib/pdfParser";
+import type { AnalyzedPDF } from "../../lib/pdfParser";
 import Result from "../../models/Result";
 
 export const runtime = "nodejs";
@@ -45,6 +45,7 @@ export async function POST(req: NextRequest) {
     }
 
     const results: AnalyzedPDF[] = [];
+    const { analyzePDF } = await import("../../lib/pdfParser");
 
     for (const part of parts) {
       if (!isPdfPart(part)) {

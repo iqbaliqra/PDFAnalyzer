@@ -10,11 +10,11 @@ export type ParsedUploadPart = {
 };
 
 /**
- * Parse multipart/form-data from the raw request body using busboy.
- * Next.js `request.formData()` can mis-handle large/binary parts on some serverless hosts;
- * streaming the body into busboy matches how Node expects multipart data.
+ * Parse multipart/form-data using busboy.
+ * Uses `arrayBuffer()` + a Node buffer stream so we avoid `Readable.fromWeb(request.body)`,
+ * which can break on Vercel’s Web Streams ↔ Node bridge and surface as HTML 500 pages.
  */
-export function parseMultipartUpload(
+export async function parseMultipartUpload(
   request: NextRequest,
   options?: { fileFieldName?: string },
 ): Promise<ParsedUploadPart[]> {
@@ -25,19 +25,15 @@ export function parseMultipartUpload(
     !contentType ||
     !contentType.toLowerCase().includes("multipart/form-data")
   ) {
-    return Promise.reject(
-      new Error("Expected Content-Type: multipart/form-data."),
-    );
+    throw new Error("Expected Content-Type: multipart/form-data.");
   }
 
-  const webBody = request.body;
-  if (!webBody) {
-    return Promise.reject(new Error("Request has no body."));
+  const raw = Buffer.from(await request.arrayBuffer());
+  if (raw.length === 0) {
+    throw new Error("Empty request body.");
   }
 
-  const nodeReadable = Readable.fromWeb(
-    webBody as import("node:stream/web").ReadableStream<Uint8Array>,
-  );
+  const nodeReadable = Readable.from(raw);
 
   return new Promise((resolve, reject) => {
     const bb = busboy({

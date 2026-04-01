@@ -29,8 +29,13 @@ function resolvePdfWorkerFileUrl(): string {
   return pathToFileURL(fromCwd).href;
 }
 
-// pdf.js loads the worker via dynamic import(file://...); must resolve a path that exists in the serverless bundle.
-PDFParse.setWorker(resolvePdfWorkerFileUrl());
+let pdfWorkerInitialized = false;
+
+function ensurePdfWorker(): void {
+  if (pdfWorkerInitialized) return;
+  PDFParse.setWorker(resolvePdfWorkerFileUrl());
+  pdfWorkerInitialized = true;
+}
 
 export interface PageSummary {
   printedPage: number | null;
@@ -46,6 +51,7 @@ export interface AnalyzedPDF {
 }
 
 export const analyzePDF = async (buffer: Buffer, fileName: string): Promise<AnalyzedPDF> => {
+  ensurePdfWorker();
   const parser = new PDFParse({ data: buffer });
   let textResult;
   try {
