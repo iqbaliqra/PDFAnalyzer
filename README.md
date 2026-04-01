@@ -2,6 +2,16 @@
 
 A web app for uploading exam PDFs and viewing a structured summary: page count, printed page numbers in order, and question ranges per printed page. Accounts are required so analyses stay private.
 
+## Screenshots
+
+| Login | Register |
+| :---: | :---: |
+| ![Login](app/images/login.png) | ![Register](app/images/register.png) |
+
+| Dashboard | Results |
+| :---: | :---: |
+| ![Dashboard](app/images/dashboard.png) | ![Results](app/images/results.png) |
+
 ## Stack
 
 - **Next.js** (App Router), **React**, **TypeScript**
@@ -43,6 +53,7 @@ npm run start    # run production server (after build)
 ## Project layout (high level)
 
 - `app/(auth)/` — login and register pages and shared layout
+- `app/images/` — README screenshots (login, register, dashboard, results)
 - `app/dashboard/` — upload UI and saved results
 - `app/api/` — auth, analyze, and results routes
 - `app/lib/` — database, auth helpers, PDF parsing
